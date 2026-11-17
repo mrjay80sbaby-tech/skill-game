@@ -1,0 +1,1542 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="data:," />
+    <title>Skill Arcade</title>
+    <!-- CrazyGames SDK v3 — the only external script in this build. Everything else is bundled in this file. -->
+    <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+    <style>
+      :root{
+        color-scheme: dark;
+        --bg:#07070a; --bg2:#0d0d12; --panel:#15151d; --panel2:#1e1e28;
+        --ink:#fff8e6; --ink2:#c9c2ad; --ink3:#8a8574;
+        --line:#2c2a22; --line2:#454034;
+        --gold:#e6bc45; --gold-bright:#ffd94d; --gold-soft:#2e2508; --gold-ink:#ffd94d;
+        --blue:#5b8cff; --blue-deep:#2f5fe0; --blue-soft:#1a2340;
+        --green:#4ade80; --green-soft:#0f2e1a;
+        --red:#ff6b6b; --red-soft:#3d1515;
+        --black:#fff8e6;
+        --shadow:0 12px 36px rgba(0,0,0,.55), 0 0 0 1px rgba(255,217,77,.06);
+        --shadow-lg:0 28px 70px rgba(0,0,0,.75), 0 0 40px rgba(230,188,69,.12);
+      }
+      *{ box-sizing:border-box; }
+      html{ scroll-behavior:smooth; scroll-padding-top:96px; }
+      body{
+        margin:0; background:#07070a; color:var(--ink);
+        font-family:system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        -webkit-font-smoothing:antialiased; line-height:1.45;
+        background-image:radial-gradient(900px 500px at 15% -5%, rgba(255,217,77,.16), transparent 60%), radial-gradient(800px 600px at 90% 10%, rgba(230,188,69,.10), transparent 55%), radial-gradient(600px 500px at 50% 110%, rgba(184,134,11,.12), transparent 60%);
+        background-attachment:fixed;
+      }
+      #bgCanvas{ position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.85; }
+      .bg-orbs{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+      .bg-orbs i{ position:absolute; border-radius:50%; filter:blur(2px); background:radial-gradient(circle, rgba(255,217,77,.55) 0%, rgba(255,217,77,0) 70%); animation:orbFloat 9s ease-in-out infinite; }
+      .bg-orbs i:nth-child(1){ width:340px;height:340px; left:-60px; top:-40px; animation-delay:0s; }
+      .bg-orbs i:nth-child(2){ width:260px;height:260px; right:-40px; top:18%; animation-delay:-3s; background:radial-gradient(circle, rgba(255,140,0,.28) 0%, transparent 70%); }
+      .bg-orbs i:nth-child(3){ width:200px;height:200px; left:38%; bottom:-60px; animation-delay:-6s; }
+      @keyframes orbFloat{ 0%,100%{ transform:translateY(0) scale(1);} 50%{ transform:translateY(-22px) scale(1.06);} }
+      #goldFlash{ position:fixed; inset:0; z-index:65; pointer-events:none; background:radial-gradient(circle at 50% 42%, rgba(255,217,77,.28), transparent 62%); opacity:0; }
+      #goldFlash.go{ animation:goldFlashAnim .55s ease-out; }
+      @keyframes goldFlashAnim{ 0%{opacity:0} 18%{opacity:1} 100%{opacity:0} }
+      button{ font-family:inherit; cursor:pointer; touch-action:manipulation; }
+      button, [role="button"], select, summary, input:not([type="checkbox"],[type="radio"]){ min-height:2.75rem; }
+      :focus-visible{ outline:3px solid var(--gold-bright); outline-offset:2px; border-radius:6px; }
+      .wrap{ max-width:1060px; margin:0 auto; padding:0 16px 120px; position:relative; z-index:1; }
+
+      /* ---------- Wallet bar ---------- */
+      .walletbar{
+        position:sticky; top:0; z-index:40;
+        background:rgba(7,7,10,.88);
+        backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+        border-bottom:1px solid rgba(255,217,77,.22);
+        box-shadow:0 6px 24px rgba(0,0,0,.45);
+      }
+      .walletbar-in{ max-width:1060px; margin:0 auto; padding:10px 16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+      .brand{ font-family:inherit; font-weight:700; letter-spacing:.14em; font-size:13px; text-transform:uppercase; color:var(--ink2); margin-right:auto; display:flex; align-items:center; gap:8px; }
+      .brand .dot{ width:9px; height:9px; border-radius:50%; background:var(--gold-bright); box-shadow:0 0 0 3px var(--gold-soft); }
+      .coinpill{
+        display:inline-flex; align-items:center; gap:8px;
+        background:linear-gradient(180deg,#fff8e6,#ffe9a3); color:#1a1300; border:1px solid #e6bc45; border-radius:999px;
+        padding:8px 8px 8px 14px; font-weight:900; font-size:17px; min-height:48px;
+        box-shadow:0 0 0 3px rgba(255,217,77,.18), 0 6px 18px rgba(0,0,0,.4);
+      }
+      .coinpill .coin-ic{ width:22px; height:22px; flex:none; }
+      .coinpill .plus{
+        width:30px; height:30px; border-radius:50%; border:none; flex:none;
+        background:var(--gold-bright); color:#191204; font-size:19px; font-weight:900; line-height:1;
+        display:grid; place-items:center; min-height:30px; padding:0;
+      }
+      .btn{
+        border:1px solid var(--line2); background:var(--panel2); color:var(--ink);
+        border-radius:12px; padding:12px 18px; font-weight:800; font-size:15px;
+        display:inline-flex; align-items:center; gap:8px; justify-content:center; min-height:48px;
+        transition:transform .12s ease, filter .12s ease, box-shadow .12s ease;
+      }
+      .btn:hover{ filter:brightness(1.12); }
+      .btn:active{ transform:translateY(1px) scale(.985); }
+      .btn-gold{ background:linear-gradient(180deg,#ffd94d,#e6bc45 55%,#c9970d); border-color:#ffd94d; color:#1a1300; box-shadow:0 6px 20px rgba(230,188,69,.35), inset 0 1px 0 rgba(255,255,255,.6); }
+      .btn-gold:hover{ filter:brightness(1.08); }
+      .btn-blue{ background:linear-gradient(180deg,#ffd94d,#e6bc45 55%,#c9970d); border-color:#ffd94d; color:#1a1300; box-shadow:0 6px 20px rgba(230,188,69,.35), inset 0 1px 0 rgba(255,255,255,.6); }
+      .btn-blue:hover{ filter:brightness(1.08); }
+      .btn-dark{ background:var(--ink); border-color:var(--ink); color:#111; }
+      .btn[disabled]{ opacity:.45; cursor:not-allowed; transform:none; }
+      .btn-sm{ padding:9px 14px; font-size:14px; min-height:44px; border-radius:10px; }
+      .btn-play{ font-size:19px !important; padding:16px 34px !important; min-height:60px !important; border-radius:999px !important; letter-spacing:.01em; box-shadow:0 10px 30px rgba(230,188,69,.45), 0 0 0 4px rgba(255,217,77,.15) !important; animation:playPulse 1.6s ease-in-out infinite; }
+      @keyframes playPulse{ 0%,100%{ box-shadow:0 10px 30px rgba(230,188,69,.45), 0 0 0 4px rgba(255,217,77,.14);} 50%{ box-shadow:0 10px 34px rgba(230,188,69,.65), 0 0 0 8px rgba(255,217,77,.10);} }
+
+      /* ---------- Tabs ---------- */
+      .tabs{ display:flex; gap:8px; padding:14px 0 6px; flex-wrap:wrap; }
+      .tab{
+        border:1px solid var(--line); background:rgba(255,255,255,.04); color:var(--ink2);
+        font-weight:800; font-size:15px; padding:12px 18px; border-radius:999px; min-height:48px;
+      }
+      .tab:hover{ color:var(--ink); border-color:var(--gold); }
+      .tab.on{ background:linear-gradient(180deg,#ffd94d,#e6bc45); color:#1a1300; border-color:#ffd94d; box-shadow:0 4px 16px rgba(230,188,69,.35); }
+
+      /* ---------- Hero / lobby ---------- */
+      .hero{ padding:22px 0 8px; }
+      .hero h1{ font-size:clamp(38px,6.5vw,64px); line-height:.95; margin:0 0 12px; font-weight:900; letter-spacing:-.03em; max-width:13ch; }
+      .hero h1 em{ font-style:normal; color:var(--gold-bright); text-shadow:0 0 24px rgba(255,217,77,.35); }
+      .hero p{ margin:0; color:var(--ink2); font-size:18px; max-width:56ch; line-height:1.5; }
+      .hero p strong{ color:var(--ink); }
+      .instant-bar{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin:18px 0 4px; padding:14px; border:1px solid rgba(255,217,77,.28); background:linear-gradient(135deg, rgba(255,217,77,.12), rgba(255,217,77,.03)); border-radius:16px; }
+      .instant-bar p{ margin:0; font-size:14.5px; color:var(--ink2); flex:1; min-width:200px; }
+      .instant-bar p b{ color:var(--ink); }
+
+      .earn-strip{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:22px 0 6px; }
+      @media (max-width:640px){ .earn-strip{ grid-template-columns:1fr; } }
+      .earn-card{
+        border:1px solid var(--line); background:var(--panel); border-radius:14px; padding:16px;
+        display:flex; gap:14px; align-items:center; box-shadow:var(--shadow);
+      }
+      .earn-card .ic{ width:46px; height:46px; border-radius:12px; flex:none; display:grid; place-items:center; background:var(--gold-soft); color:var(--gold-ink); }
+      .earn-card .ic.blue{ background:var(--gold-soft); color:var(--gold-ink); }
+      .earn-card h3{ margin:0 0 2px; font-size:15px; }
+      .earn-card p{ margin:0; font-size:13px; color:var(--ink2); }
+      .earn-card .btn{ margin-left:auto; flex:none; }
+
+      .games{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:20px 0 8px; }
+      @media (max-width:820px){ .games{ grid-template-columns:1fr; } }
+      .game-card{
+        text-align:left; border:1px solid var(--line); background:linear-gradient(180deg,#1a1a24,#12121a); border-radius:18px;
+        padding:22px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px; width:100%;
+        transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+      }
+      .game-card:hover{ border-color:var(--gold-bright); transform:translateY(-2px); box-shadow:0 18px 40px rgba(0,0,0,.6), 0 0 24px rgba(230,188,69,.14); }
+      .game-card .g-ic{ width:52px; height:52px; border-radius:14px; display:grid; place-items:center; }
+      .game-card h3{ margin:0; font-size:21px; font-weight:800; letter-spacing:-.01em; }
+      .game-card p{ margin:0; color:var(--ink2); font-size:14px; flex:1; }
+      .game-card .meta{ display:flex; gap:8px; flex-wrap:wrap; }
+      .chip{ font-size:12px; font-weight:700; padding:5px 10px; border-radius:999px; background:var(--panel2); color:var(--ink2); border:1px solid var(--line); }
+      .chip.gold{ background:var(--gold-soft); color:var(--gold-ink); border-color:transparent; }
+      .game-card .play{ font-weight:800; font-size:14px; color:var(--gold); display:inline-flex; gap:6px; align-items:center; }
+
+      .how{ margin:30px 0 0; border-top:1px solid var(--line); padding-top:22px; }
+      .how h2{ font-size:19px; margin:0 0 12px; }
+      .how-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+      @media (max-width:820px){ .how-grid{ grid-template-columns:1fr; } }
+      .how-grid div{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+      .how-grid b{ display:block; margin-bottom:4px; font-size:14px; }
+      .how-grid span{ font-size:13.5px; color:var(--ink2); }
+      .fineprint{ margin-top:18px; font-size:12.5px; color:var(--ink3); max-width:70ch; }
+
+      /* ---------- Game stage ---------- */
+      .view{ display:none; }
+      .view.on{ display:block; }
+      .stage{ margin-top:10px; border:1px solid rgba(255,217,77,.22); background:linear-gradient(180deg,#17171f 0%, #101018 100%); border-radius:20px; box-shadow:var(--shadow-lg); overflow:hidden; position:relative; }
+      .stage::before{ content:""; position:absolute; inset:0 0 auto 0; height:3px; background:linear-gradient(90deg, transparent, #ffd94d, #e6bc45, transparent); opacity:.9; }
+      .stage-head{ padding:20px 22px 0; display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+      .stage-head h2{ margin:0; font-size:30px; font-weight:900; letter-spacing:-.02em; }
+      .stage-head p{ margin:5px 0 0; color:var(--ink2); font-size:14.5px; max-width:58ch; line-height:1.5; }
+      .stage-head .back{ margin-left:auto; }
+      .stage-body{ padding:16px 22px 24px; }
+      .hint-bar{ display:flex; align-items:center; gap:10px; background:linear-gradient(90deg, rgba(255,217,77,.16), rgba(255,217,77,.06)); border:1px solid rgba(255,217,77,.32); color:#ffe9a3; border-radius:12px; padding:11px 12px 11px 14px; font-size:14.5px; font-weight:700; line-height:1.35; margin-bottom:14px; }
+      .hint-bar .hint-ic{ font-size:18px; flex:none; }
+      .hint-bar span{ flex:1; }
+      .hint-bar button{ flex:none; width:36px; height:36px; min-height:36px; border-radius:999px; border:1px solid rgba(255,217,77,.35); background:rgba(0,0,0,.35); color:#ffd94d; font-size:18px; line-height:1; display:grid; place-items:center; padding:0; }
+      .hud{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+      .hud .stat{ background:#1e1e28; border:1px solid var(--line); border-radius:12px; padding:10px 14px; font-size:14px; font-weight:800; }
+      .hud .stat span{ color:var(--ink2); font-weight:600; margin-right:5px; }
+      .hud .stat.goldstat{ background:linear-gradient(180deg,#2e2508,#241c05); border-color:rgba(255,217,77,.35); color:var(--gold-ink); }
+      .timerbar{ height:10px; background:#22222e; border-radius:99px; overflow:hidden; margin-bottom:16px; border:1px solid rgba(255,255,255,.06); }
+      .timerbar i{ display:block; height:100%; background:linear-gradient(90deg,#ffd94d,#e6bc45); width:100%; transition:width .1s linear; box-shadow:0 0 12px rgba(255,217,77,.45); }
+      .timerbar.low i{ background:var(--red); }
+
+      .center-box{ text-align:center; padding:26px 10px 10px; }
+      .center-box .big{ font-size:24px; font-weight:800; margin:0 0 8px; }
+      .center-box p{ color:var(--ink2); margin:0 auto 18px; max-width:44ch; font-size:15px; }
+
+      /* Trivia */
+      .q-cat{ font-size:12.5px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; color:var(--gold-bright); margin-bottom:8px; }
+      .q-text{ font-size:clamp(22px,3.8vw,30px); font-weight:900; line-height:1.22; margin:0 0 20px; letter-spacing:-.015em; }
+      .opts{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+      @media (max-width:560px){ .opts{ grid-template-columns:1fr; } }
+      .opt{
+        text-align:left; border:2px solid #34322a; background:#1c1c26; color:var(--ink);
+        border-radius:14px; padding:16px 18px; font-size:17.5px; font-weight:700; min-height:64px;
+        display:flex; align-items:center; gap:12px; width:100%;
+        transition:transform .12s ease, border-color .12s ease, background .12s ease, box-shadow .12s ease;
+      }
+      .opt .letter{ width:34px; height:34px; border-radius:10px; background:#2a2a36; display:grid; place-items:center; font-size:14px; font-weight:900; flex:none; border:1px solid rgba(255,255,255,.08); }
+      .opt:hover:not([disabled]){ border-color:var(--gold-bright); background:#232331; transform:translateY(-1px); box-shadow:0 8px 20px rgba(0,0,0,.35); }
+      .opt.right{ border-color:var(--green); background:#12301d; box-shadow:0 0 0 3px rgba(74,222,128,.22), 0 10px 24px rgba(0,0,0,.35); }
+      .opt.right .letter{ background:var(--green); color:#06130a; }
+      .opt.wrong{ border-color:var(--red); background:var(--red-soft); }
+      .opt.dim{ opacity:.38; }
+      .opt[disabled]{ cursor:default; }
+      .q-actions{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+      .feedback{ min-height:28px; font-weight:800; font-size:16.5px; margin-top:14px; line-height:1.35; }
+      .feedback.good{ color:var(--green); } .feedback.bad{ color:var(--red); }
+      .feedback.pop{ animation:feedbackPop .38s cubic-bezier(.2,1.4,.3,1); }
+      @keyframes feedbackPop{ 0%{ transform:scale(.92); opacity:.4;} 60%{ transform:scale(1.06);} 100%{ transform:scale(1); opacity:1;} }
+
+      /* Word Forge */
+      .tiles{ display:flex; gap:9px; flex-wrap:wrap; justify-content:center; margin:10px 0 8px; }
+      .tile{
+        width:58px; height:64px; border-radius:12px; background:linear-gradient(180deg,#fff8e6,#e8dfc2); color:#111;
+        display:grid; place-items:center; font-size:29px; font-weight:900; text-transform:uppercase;
+        box-shadow:0 5px 0 rgba(0,0,0,.45), 0 10px 20px rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.5);
+      }
+      @media (max-width:480px){ .tile{ width:46px; height:52px; font-size:23px; } }
+      .tile.revealed{ background:linear-gradient(180deg,#ffd94d,#e6bc45); color:#1a1300; box-shadow:0 5px 0 #8a6100, 0 0 18px rgba(255,217,77,.35); }
+      .hintline{ text-align:center; color:var(--ink2); font-size:15px; margin:10px 0 16px; }
+      .hintline b{ color:var(--ink); }
+      .guessrow{ display:flex; gap:8px; max-width:520px; margin:0 auto; }
+      .guessrow input{
+        flex:1; min-width:0; border:2px solid var(--line2); background:var(--panel); color:var(--ink);
+        border-radius:10px; padding:12px 14px; font-size:17px; font-weight:600; text-transform:uppercase; letter-spacing:.06em;
+      }
+      .guessrow input:focus{ border-color:var(--gold-bright); outline:none; }
+      .solved-list{ display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin-top:16px; }
+      .solved-list .chip{ text-transform:uppercase; letter-spacing:.05em; }
+
+      /* Reaction */
+      .react-box{
+        border-radius:18px; min-height:300px; display:grid; place-items:center; text-align:center;
+        padding:28px; cursor:pointer; user-select:none; -webkit-user-select:none; border:2px solid var(--line);
+        background:#1e1e28; color:var(--ink); width:100%;
+        transition:background .12s ease, transform .08s ease;
+      }
+      .react-box:active{ transform:scale(.992); }
+      .react-box .rb-big{ font-size:clamp(28px,4.6vw,40px); font-weight:900; margin:0 0 8px; letter-spacing:-.02em; }
+      .react-box .rb-sub{ color:inherit; opacity:.82; font-size:16px; margin:0; line-height:1.45; }
+      .react-box.wait{ background:#3d1515; border-color:var(--red); box-shadow:inset 0 0 40px rgba(255,107,107,.12); }
+      .react-box.go{ background:#22c55e; border-color:#4ade80; color:#06130a; box-shadow:0 0 40px rgba(74,222,128,.35), inset 0 0 30px rgba(255,255,255,.18); }
+      .react-box.go .rb-sub{ opacity:.8; }
+      .mode-toggle{ display:inline-flex; background:var(--panel2); border:1px solid var(--line); border-radius:999px; padding:4px; gap:4px; margin-bottom:16px; }
+      .mode-toggle button{ border:none; background:transparent; color:var(--ink2); font-weight:700; font-size:13.5px; padding:8px 16px; border-radius:999px; min-height:40px; }
+      .mode-toggle button.on{ background:var(--ink); color:var(--bg); }
+      .arena{ position:relative; height:320px; border:2px dashed var(--line2); border-radius:16px; background:var(--panel2); overflow:hidden; }
+      .target{
+        position:absolute; width:72px; height:72px; border-radius:50%; border:none; padding:0; min-height:72px;
+        background:radial-gradient(circle at 50% 50%, #fff 0 16%, #ff3b30 17% 38%, #fff 39% 55%, #e6bc45 56% 100%);
+        box-shadow:0 8px 22px rgba(0,0,0,.45), 0 0 0 4px rgba(255,217,77,.18); cursor:pointer;
+        animation:targetPop .22s cubic-bezier(.2,1.4,.3,1);
+      }
+      @keyframes targetPop{ from{ transform:scale(.55);} to{ transform:scale(1);} }
+      .target:active{ transform:scale(.92); }
+
+      /* Modal */
+      .overlay{ position:fixed; inset:0; background:rgba(5,5,8,.66); z-index:80; display:none; align-items:center; justify-content:center; padding:16px; }
+      .overlay.open{ display:flex; }
+      .modal{ background:var(--panel); color:var(--ink); border-radius:18px; max-width:440px; width:100%; padding:24px; box-shadow:var(--shadow-lg); max-height:92vh; overflow:auto; }
+      .modal h3{ margin:0 0 6px; font-size:21px; font-weight:900; }
+      .modal p{ margin:0 0 14px; color:var(--ink2); font-size:14.5px; }
+      .modal .row{ display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; }
+      .modal .row .btn{ flex:1; }
+      .ad-creative{ border-radius:14px; padding:26px 20px; text-align:center; color:#fff; background:linear-gradient(135deg,#101014 55%,#7a5a00); border:1px solid var(--line); }
+      .ad-creative .ac-kicker{ font-size:11px; letter-spacing:.2em; font-weight:800; text-transform:uppercase; color:var(--gold-bright); }
+      .ad-creative .ac-title{ font-size:27px; font-weight:900; line-height:1.1; margin:8px 0; }
+      .ad-creative .ac-sub{ font-size:14px; opacity:.85; margin:0; }
+      .ad-progress{ height:8px; background:var(--panel2); border-radius:99px; overflow:hidden; margin-top:16px; }
+      .ad-progress i{ display:block; height:100%; width:0%; background:var(--gold-bright); }
+
+      /* ---------- Juice: fx, streaks, bests ---------- */
+      body::before{ content:""; position:fixed; inset:-15%; z-index:0; pointer-events:none;
+        background:radial-gradient(620px 420px at 12% 8%, rgba(255,217,77,.18), transparent 60%), radial-gradient(720px 520px at 88% 26%, rgba(255,217,77,.12), transparent 60%), radial-gradient(560px 560px at 50% 95%, rgba(184,134,11,.12), transparent 62%);
+        animation:bgDrift 18s ease-in-out infinite alternate; }
+      @keyframes bgDrift{ from{ transform:translate3d(-1.6%,-1%,0) scale(1); } to{ transform:translate3d(1.6%,1.6%,0) scale(1.05); } }
+      #fxLayer{ position:fixed; inset:0; z-index:70; pointer-events:none; overflow:hidden; }
+      #edgeGlow{ position:fixed; inset:0; z-index:60; pointer-events:none; opacity:0; transition:opacity .25s; box-shadow:inset 0 0 64px 20px rgba(220,38,38,.55); }
+      #edgeGlow.on{ opacity:1; animation:edgePulse .9s ease-in-out infinite; }
+      @keyframes edgePulse{ 0%,100%{ box-shadow:inset 0 0 64px 20px rgba(220,38,38,.45); } 50%{ box-shadow:inset 0 0 84px 30px rgba(220,38,38,.72); } }
+      .timerbar.urgent i{ animation:timerPulse .5s ease-in-out infinite; }
+      @keyframes timerPulse{ 0%,100%{ filter:brightness(1); } 50%{ filter:brightness(1.7); } }
+      .fly-coin{ position:fixed; left:0; top:0; width:22px; height:22px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #ffe9a3, #f2cd63 55%, #d4a017); border:2px solid #b8860b; color:#8a6100; font-size:11px; font-weight:900; display:grid; place-items:center; z-index:71; box-shadow:0 3px 8px rgba(0,0,0,.3); }
+      .confetti-bit{ position:fixed; left:0; top:0; width:8px; height:13px; z-index:71; border-radius:2px; }
+      .burst-dot{ position:fixed; left:0; top:0; width:9px; height:9px; border-radius:50%; z-index:71; background:var(--gold-bright); }
+      .floater{ position:fixed; left:0; top:0; z-index:72; font-weight:900; font-size:19px; color:var(--gold); text-shadow:0 1px 2px rgba(0,0,0,.35); white-space:nowrap; }
+      .floater.bad{ color:var(--red); }
+      @keyframes shakeX{ 0%,100%{ transform:translateX(0); } 20%{ transform:translateX(-7px); } 40%{ transform:translateX(6px); } 60%{ transform:translateX(-4px); } 80%{ transform:translateX(3px); } }
+      .shake{ animation:shakeX .38s ease; }
+      @keyframes popIn{ 0%{ transform:scale(1); } 35%{ transform:scale(1.06); } 65%{ transform:scale(.985);} 100%{ transform:scale(1); } }
+      .opt.right{ animation:popIn .42s cubic-bezier(.2,1.3,.3,1); }
+      @keyframes stageIn{ from{ opacity:0; transform:translateY(10px) scale(.992);} to{ opacity:1; transform:translateY(0) scale(1);} }
+      .view.on .stage{ animation:stageIn .38s cubic-bezier(.2,.9,.3,1) both; }
+      .center-box .big{ font-size:27px; }
+      .guessrow input{ font-size:18px !important; min-height:52px; }
+      .arena{ height:340px; background:#17171f; border-color:#3a382c; }
+      @keyframes tileIn{ from{ transform:rotateX(88deg); opacity:0; } to{ transform:rotateX(0); opacity:1; } }
+      .tile{ animation:tileIn .34s ease both; }
+      @keyframes flameFlicker{ 0%,100%{ transform:scale(1) rotate(-2deg); } 50%{ transform:scale(1.18) rotate(2deg); } }
+      .flame{ width:17px; height:17px; vertical-align:-3px; margin-left:5px; animation:flameFlicker .5s ease-in-out infinite; }
+      .hud .stat.hot{ background:#fde8e8; border-color:#f3b3b3; color:#991b1b; }
+      @media (prefers-color-scheme: dark){ .hud .stat.hot{ background:#3d1515; border-color:#7f1d1d; color:#fca5a5; } }
+      .mult-badge{ font-weight:900; color:#e25822; margin-left:4px; }
+      .bests{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:18px 0 4px; }
+      @media (max-width:820px){ .bests{ grid-template-columns:1fr; } }
+      .best-card{ border:1px solid var(--line); background:var(--panel); border-radius:12px; padding:12px 16px; box-shadow:var(--shadow); display:flex; align-items:center; justify-content:space-between; gap:10px; }
+      .best-card span{ font-size:12px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--ink2); }
+      .best-card b{ font-size:17px; font-weight:900; color:var(--gold); white-space:nowrap; }
+      .combo-meter{ height:8px; background:var(--panel2); border-radius:99px; overflow:hidden; margin:-6px 0 14px; }
+      .combo-meter i{ display:block; height:100%; width:0%; background:linear-gradient(90deg,var(--gold-bright),#e25822); transition:width .18s ease; }
+      .mute-btn svg{ display:block; }
+      @media (max-width:560px){
+        .walletbar-in{ padding:8px 12px; gap:8px; }
+        .brand{ font-size:11.5px; letter-spacing:.1em; }
+      }
+
+      /* Portal fit: centered stage that holds up from small phones to a 16:9 desktop frame */
+      @media (min-aspect-ratio: 16/10) and (min-width: 1000px){ .wrap{ max-width:1180px; } }
+
+      /* Toast */
+      .toast{
+        position:fixed; left:50%; bottom:22px; transform:translate(-50%, 90px); z-index:90;
+        background:var(--ink); color:var(--bg); font-weight:800; font-size:15px;
+        padding:12px 20px; border-radius:999px; box-shadow:var(--shadow-lg);
+        transition:transform .35s cubic-bezier(.2,.9,.3,1.2), opacity .25s, visibility .35s; pointer-events:none;
+        display:flex; align-items:center; gap:8px; max-width:92vw; text-align:center;
+        opacity:0; visibility:hidden;
+      }
+      .toast.show{ transform:translate(-50%,0); opacity:1; visibility:visible; }
+      .toast .amt{ color:var(--gold-bright); }
+      @media (prefers-reduced-motion: reduce){
+        *{ animation:none !important; transition:none !important; }
+        html{ scroll-behavior:auto; }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="bgCanvas" aria-hidden="true"></canvas>
+    <div class="bg-orbs" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div id="goldFlash" aria-hidden="true"></div>
+
+    <!-- Wallet bar -->
+    <div class="walletbar">
+      <div class="walletbar-in">
+        <div class="brand"><span class="dot"></span> Skill Arcade</div>
+        <button class="btn btn-sm" id="earnBtnTop" type="button">▶&nbsp; Earn free coins</button>
+        <button class="btn btn-sm mute-btn" id="muteBtn" type="button" aria-label="Sound on — tap to mute" aria-pressed="false"></button>
+        <button class="coinpill" id="walletPill" type="button" aria-label="Coin balance">
+          <svg class="coin-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#f2cd63"/><circle cx="12" cy="12" r="7.2" fill="none" stroke="#b8860b" stroke-width="1.6"/><text x="12" y="16" text-anchor="middle" font-size="10" font-weight="900" fill="#8a6100">S</text></svg>
+          <span id="coinCount">250</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <!-- Tabs -->
+      <nav class="tabs" aria-label="Games">
+        <button class="tab" data-view="lobby" type="button">← Lobby</button>
+        <button class="tab on" data-view="trivia" type="button">Trivia Rush</button>
+        <button class="tab" data-view="word" type="button">Word Forge</button>
+        <button class="tab" data-view="reaction" type="button">Reaction Tap</button>
+      </nav>
+
+      <!-- ============ LOBBY ============ -->
+      <section class="view" id="view-lobby">
+        <div class="hero">
+          <h1>Three games.<br />One wallet. <em>All skill.</em></h1>
+          <p>Free to play, forever. Win coins by being <strong>fast, sharp, and accurate</strong> — never by luck. Coins buy hints, extra time, and continues. No cash prizes, no cash-out: just bragging rights and a bigger stack.</p>
+          <div class="instant-bar">
+            <p><b>Jump straight back in —</b> every game below starts the instant you tap it. No menus in between.</p>
+            <button class="btn btn-gold btn-play" data-goto="trivia" data-autostart="trivia" type="button">▶ PLAY — Trivia Rush</button>
+          </div>
+        </div>
+
+        <div class="earn-strip">
+          <div class="earn-card">
+            <div class="ic" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M8 5v14"/></svg>
+            </div>
+            <div>
+              <h3>Daily bonus — 100 coins</h3>
+              <p id="dailyStatus">On the house, every day you show up.</p>
+            </div>
+            <button class="btn btn-gold" id="dailyBtn" type="button">Claim</button>
+          </div>
+          <div class="earn-card">
+            <div class="ic blue" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4.8v14.4c0 .9 1 1.5 1.8 1L20 13a1.2 1.2 0 0 0 0-2L7.8 3.9C7 3.4 6 3.9 6 4.8Z"/></svg>
+            </div>
+            <div>
+              <h3>Watch an ad — 50 coins</h3>
+              <p id="adStatus">A short sponsor spot, then coins land in your wallet.</p>
+            </div>
+            <button class="btn btn-blue" id="watchAdBtn" type="button">Watch</button>
+          </div>
+        </div>
+
+        <div class="games">
+          <button class="game-card" data-goto="trivia" type="button">
+            <span class="g-ic" style="background:var(--blue-soft);color:var(--blue)">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.3A2.6 2.6 0 1 1 12 12.4V14"/><circle cx="12" cy="17.4" r=".6" fill="currentColor"/></svg>
+            </span>
+            <h3>Trivia Rush</h3>
+            <p>10 questions against the clock. Correct answers pay 10 coins, fast answers pay a speed bonus, and streaks multiply the payout — ×2 at 3 in a row, ×3 at 5.</p>
+            <span class="meta"><span class="chip gold">Up to ~150 / run</span><span class="chip">15s per question</span></span>
+            <span class="play">Play Trivia Rush →</span>
+          </button>
+
+          <button class="game-card" data-goto="word" type="button">
+            <span class="g-ic" style="background:var(--gold-soft);color:var(--gold-ink)">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 14.5 9.5M13 4l7 7-3.5 3.5-7-7z"/><path d="M13 4l2-2 7 7-2 2"/></svg>
+            </span>
+            <h3>Word Forge</h3>
+            <p>Unscramble the forged letters before the 60-second clock runs out. Every word you crack pays 20 coins plus a length bonus.</p>
+            <span class="meta"><span class="chip gold">20+ per word</span><span class="chip">60s rounds</span></span>
+            <span class="play">Play Word Forge →</span>
+          </button>
+
+          <button class="game-card" data-goto="reaction" type="button">
+            <span class="g-ic" style="background:var(--red-soft);color:var(--red)">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5H11L9.5 22 19 10h-6.5z"/></svg>
+            </span>
+            <h3>Reaction Tap</h3>
+            <p>Pure reflexes. Wait for green and tap in milliseconds — under 250 ms pays 15 coins, and the green fades fast. Then hunt targets in a 30-second rush and chain combos.</p>
+            <span class="meta"><span class="chip gold">Up to ~200 / session</span><span class="chip">2 modes</span></span>
+            <span class="play">Play Reaction Tap →</span>
+          </button>
+        </div>
+
+        <div class="bests" aria-label="Personal bests">
+          <div class="best-card"><span>Best reflex</span><b id="bestReflex">Not set yet</b></div>
+          <div class="best-card"><span>Best trivia run</span><b id="bestTrivia">Not set yet</b></div>
+          <div class="best-card"><span>Best Word Forge round</span><b id="bestWord">Not set yet</b></div>
+        </div>
+
+        <div class="how">
+          <h2>How the coins work</h2>
+          <div class="how-grid">
+            <div><b>Earn</b><span>Win coins in all three games, claim the daily bonus, or watch a rewarded ad for +50.</span></div>
+            <div><b>Spend</b><span>Hints in Trivia (15), letter reveals in Word Forge (10), extra time (25), and continues when a run ends early.</span></div>
+            <div><b>Streaks pay</b><span>Hot streaks multiply payouts in Trivia Rush and Target Rush — ×2 at 3 in a row, ×3 at 5. Personal bests track your sharpest runs.</span></div>
+          </div>
+          <p class="fineprint">Skill Arcade is a free skill-game arcade. Every payout is decided by knowledge, vocabulary, or reaction speed — there is no slot machine, no dice, and no element of chance deciding whether you win coins. Virtual coins have no cash value and cannot be redeemed, transferred, or cashed out.</p>
+        </div>
+
+      </section>
+
+      <!-- ============ TRIVIA ============ -->
+      <section class="view on" id="view-trivia">
+        <div class="stage">
+          <div class="stage-head">
+            <div>
+              <h2>Trivia Rush</h2>
+              <p>10 questions, 15 seconds each. Correct = 10 coins, plus a +5 speed bonus with 8+ seconds left. Streaks multiply the whole payout: ×2 at 3 in a row, ×3 at 5.</p>
+            </div>
+            <button class="btn btn-sm back" data-goto="lobby" type="button">← Lobby</button>
+          </div>
+          <div class="stage-body">
+            <div class="hint-bar" id="hintTrivia"><span class="hint-ic" aria-hidden="true">✦</span><span>Tap the correct answer fast — streaks multiply your coins!</span><button type="button" data-dismiss-hint="hintTrivia" aria-label="Dismiss hint">×</button></div>
+            <div id="triviaStart" class="center-box" hidden>
+              <p class="big">Ready when you are.</p>
+              <p>Questions shuffle every run — sports, science, history, Kentucky, and more. Stuck mid-run? A hint removes two wrong answers for 15 coins.</p>
+              <button class="btn btn-blue btn-play" id="triviaStartBtn" type="button">▶ Start run — free</button>
+            </div>
+            <div id="triviaPlay" hidden>
+              <div class="hud">
+                <div class="stat"><span>Question</span><b id="tQNum">1 / 10</b></div>
+                <div class="stat"><span>Score</span><b id="tScore">0</b></div>
+                <div class="stat" id="tStreakStat"><span>Streak</span><b id="tStreak">0</b><span id="tFlame" hidden><svg class="flame" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.8c1.2 4.2-3.2 5.9-3.2 9.4a5.2 5.2 0 0 0 10.4 0c0-2.1-1-3.7-2.1-5.3-.3 1.3-1.1 2.2-2.2 2.7.4-2.7-.6-5.4-2.9-6.8z" fill="#e25822"/></svg><b class="mult-badge" id="tMult">×2</b></span></div>
+                <div class="stat goldstat"><span>Earned</span><b id="tEarned">0 coins</b></div>
+              </div>
+              <div class="timerbar" id="tTimerBar"><i id="tTimerFill"></i></div>
+              <div class="q-cat" id="tCat">General</div>
+              <p class="q-text" id="tText"></p>
+              <div class="opts" id="tOpts"></div>
+              <div class="q-actions">
+                <button class="btn btn-sm" id="tHintBtn" type="button">Hint — remove 2 wrong (15 coins)</button>
+              </div>
+              <div class="feedback" id="tFeedback" aria-live="polite"></div>
+            </div>
+            <div id="triviaEnd" class="center-box" hidden>
+              <p class="big" id="tEndTitle">Run complete</p>
+              <p id="tEndText"></p>
+              <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+                <button class="btn btn-blue" id="triviaAgainBtn" type="button">Play again</button>
+                <button class="btn" data-goto="lobby" type="button">Back to lobby</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ WORD FORGE ============ -->
+      <section class="view" id="view-word">
+        <div class="stage">
+          <div class="stage-head">
+            <div>
+              <h2>Word Forge</h2>
+              <p>Unscramble each word before the 60-second clock dies. Solved word = 20 coins + 2 per letter. Reveal a letter for 10 coins, buy +15 seconds for 25.</p>
+            </div>
+            <button class="btn btn-sm back" data-goto="lobby" type="button">← Lobby</button>
+          </div>
+          <div class="stage-body">
+            <div class="hint-bar" id="hintWord"><span class="hint-ic" aria-hidden="true">✦</span><span>Unscramble the letters — type the word and hit Forge it before time runs out.</span><button type="button" data-dismiss-hint="hintWord" aria-label="Dismiss hint">×</button></div>
+            <div id="wordStart" class="center-box">
+              <p class="big">Heat up the forge.</p>
+              <p>Words run 5–8 letters, each with a hint. Type your guess and hit Forge it — wrong guesses cost nothing but time.</p>
+              <button class="btn btn-gold btn-play" id="wordStartBtn" type="button">▶ Start round — free</button>
+            </div>
+            <div id="wordPlay" hidden>
+              <div class="hud">
+                <div class="stat"><span>Time</span><b id="wTime">60s</b></div>
+                <div class="stat"><span>Solved</span><b id="wSolved">0</b></div>
+                <div class="stat goldstat"><span>Earned</span><b id="wEarned">0 coins</b></div>
+              </div>
+              <div class="timerbar" id="wTimerBar"><i id="wTimerFill"></i></div>
+              <div class="tiles" id="wTiles"></div>
+              <p class="hintline">Hint: <b id="wHint"></b> · <span id="wLen"></span> letters</p>
+              <form class="guessrow" id="wForm">
+                <input id="wInput" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Your guess" aria-label="Your guess" />
+                <button class="btn btn-gold" type="submit">Forge it</button>
+              </form>
+              <div class="feedback" id="wFeedback" style="text-align:center" aria-live="polite"></div>
+              <div class="q-actions" style="justify-content:center">
+                <button class="btn btn-sm" id="wRevealBtn" type="button">Reveal a letter (10 coins)</button>
+                <button class="btn btn-sm" id="wTimeBtn" type="button">+15 seconds (25 coins)</button>
+                <button class="btn btn-sm" id="wSkipBtn" type="button">Skip word</button>
+              </div>
+              <div class="solved-list" id="wSolvedList"></div>
+            </div>
+            <div id="wordEnd" class="center-box" hidden>
+              <p class="big">Time! Forge cooling down.</p>
+              <p id="wEndText"></p>
+              <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+                <button class="btn btn-gold" id="wordAgainBtn" type="button">Play again</button>
+                <button class="btn" data-goto="lobby" type="button">Back to lobby</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ REACTION ============ -->
+      <section class="view" id="view-reaction">
+        <div class="stage">
+          <div class="stage-head">
+            <div>
+              <h2>Reaction Tap</h2>
+              <p>Two ways to get paid for fast hands. Reflex Test: 3 rounds — tap the instant it turns green, but the green fades in a second, so a slow tap scores nothing. Under 250 ms pays 15 coins, around 500 ms pays 5, slower pays less. Target Rush: 30 seconds, targets pay 5 coins, and chained hits build a combo — ×2 at 3 straight, ×3 at 5.</p>
+            </div>
+            <button class="btn btn-sm back" data-goto="lobby" type="button">← Lobby</button>
+          </div>
+          <div class="stage-body">
+            <div class="hint-bar" id="hintReaction"><span class="hint-ic" aria-hidden="true">✦</span><span>Wait for green, then tap instantly — under 250 ms pays the max. In Target Rush, chain hits for combo multipliers.</span><button type="button" data-dismiss-hint="hintReaction" aria-label="Dismiss hint">×</button></div>
+            <div style="text-align:center">
+              <div class="mode-toggle" role="group" aria-label="Reaction mode">
+                <button id="modeReflex" class="on" type="button">Reflex Test</button>
+                <button id="modeRush" type="button">Target Rush</button>
+              </div>
+            </div>
+
+            <div id="reflexPanel">
+              <div class="hud" style="justify-content:center">
+                <div class="stat"><span>Round</span><b id="rRound">– / 3</b></div>
+                <div class="stat"><span>Last</span><b id="rLast">— ms</b></div>
+                <div class="stat"><span>Best</span><b id="rBest">— ms</b></div>
+                <div class="stat goldstat"><span>Earned</span><b id="rEarned">0 coins</b></div>
+              </div>
+              <button class="react-box" id="reactBox" type="button">
+                <span>
+                  <span class="rb-big" id="rbBig">Tap to start</span>
+                  <span class="rb-sub" id="rbSub" style="display:block">Wait for green… then tap as fast as you can. Tapping early restarts the round.</span>
+                </span>
+              </button>
+            </div>
+
+            <div id="rushPanel" hidden>
+              <div class="hud" style="justify-content:center">
+                <div class="stat"><span>Time</span><b id="rushTime">30s</b></div>
+                <div class="stat"><span>Hits</span><b id="rushHits">0</b></div>
+                <div class="stat" id="rushComboStat"><span>Combo</span><b id="rushCombo">0</b></div>
+                <div class="stat goldstat"><span>Earned</span><b id="rushEarned">0 coins</b></div>
+              </div>
+              <div class="combo-meter" aria-hidden="true"><i id="comboFill"></i></div>
+              <div class="arena" id="arena">
+                <div class="center-box" id="rushStartBox" style="position:absolute;inset:0;display:grid;place-items:center">
+                  <div>
+                    <p class="big">Smash every target.</p>
+                    <p>Targets jump the moment you hit them. Misses cost nothing — speed is everything.</p>
+                    <button class="btn btn-blue btn-play" id="rushStartBtn" type="button">▶ Start rush — free</button>
+                  </div>
+                </div>
+                <button class="target" id="targetBtn" type="button" aria-label="Target" hidden></button>
+              </div>
+              <div class="feedback" id="rushFeedback" style="text-align:center" aria-live="polite"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Rewarded ad modal -->
+    <div class="overlay" id="adOverlay" role="dialog" aria-modal="true" aria-label="Rewarded ad">
+      <div class="modal">
+        <div class="ad-creative">
+          <div class="ac-kicker">Advertisement</div>
+          <div class="ac-title" id="adTitle">A quick word from our sponsors</div>
+          <p class="ac-sub" id="adSub">Ads keep Skill Arcade free to play. Your coins land the moment it finishes.</p>
+        </div>
+        <div class="ad-progress"><i id="adFill"></i></div>
+        <p style="margin-top:12px;text-align:center" id="adCountText">Your 50 coins land in 3s…</p>
+        <div class="row">
+          <button class="btn btn-gold" id="adClaimBtn" type="button" disabled>Claim 50 coins</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="edgeGlow" aria-hidden="true"></div>
+    <div id="fxLayer" aria-hidden="true"></div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast" role="status"></div>
+
+    <script>
+      "use strict";
+      /* ================= Wallet ================= */
+      var state = { coins: 250, dailyClaimed: false, adCooldownUntil: 0, muted: false, bests: { reflex: null, trivia: -1, word: -1 } };
+      var coinEl = document.getElementById('coinCount');
+      var toastEl = document.getElementById('toast');
+      var toastTimer = null;
+
+      function renderCoins(){ coinEl.textContent = state.coins.toLocaleString('en-US'); }
+      function toast(html, ms){
+        toastEl.innerHTML = html;
+        toastEl.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, ms || 2400);
+      }
+      function addCoins(n, label){
+        state.coins += n; renderCoins();
+        if (n > 0) toast('<span class="amt">+' + n + ' coins</span>&nbsp;' + (label || 'added to your wallet'));
+        else toast('<span class="amt">' + n + ' coins</span>&nbsp;' + (label || ''));
+      }
+      function spendCoins(n, label){
+        if (state.coins < n){ toast('Not enough coins — earn more by playing, the free daily bonus, or a rewarded ad', 3200); return false; }
+        state.coins -= n; renderCoins();
+        toast('<span class="amt">−' + n + ' coins</span>&nbsp;' + label);
+        return true;
+      }
+      renderCoins();
+
+      /* ================= Sound (generated in code, no files) ================= */
+      var AC = null;
+      var reducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+      function ac(){
+        if (!AC){ try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; } }
+        if (AC && AC.state === 'suspended') AC.resume();
+        return AC;
+      }
+      document.addEventListener('pointerdown', function(){ if (!state.muted) ac(); });
+      function tone(freq, dur, type, vol, delay, slideTo){
+        if (state.muted || adAudioMuted) return;
+        var c = ac(); if (!c) return;
+        try {
+          var t0 = c.currentTime + (delay || 0);
+          var o = c.createOscillator(), g = c.createGain();
+          o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t0);
+          if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
+          g.gain.setValueAtTime(0.0001, t0);
+          g.gain.exponentialRampToValueAtTime(vol || 0.15, t0 + 0.012);
+          g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+          o.connect(g); g.connect(c.destination);
+          o.start(t0); o.stop(t0 + dur + 0.05);
+        } catch (e) {}
+      }
+      var sfx = {
+        tick: function(step){ tone(520 + step * 110, 0.05, 'square', 0.045); },
+        pop: function(){ tone(540, 0.09, 'triangle', 0.16, 0, 170); },
+        coin: function(){ tone(988, 0.07, 'square', 0.05); tone(1319, 0.2, 'square', 0.05, 0.07); },
+        ding: function(){ tone(1046, 0.12, 'sine', 0.16); tone(1568, 0.2, 'sine', 0.12, 0.07); },
+        wrong: function(){ tone(160, 0.18, 'sawtooth', 0.09, 0, 105); },
+        flip: function(){ tone(720, 0.045, 'triangle', 0.07); },
+        win: function(){ var n = [523, 659, 784, 1046]; for (var i = 0; i < n.length; i++) tone(n[i], 0.14, 'sine', 0.13, i * 0.09); }
+      };
+      function buzz(p){ try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
+
+      /* Mute toggle */
+      var SND_ON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor" stroke="none"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.4 5.6a9 9 0 0 1 0 12.8"/></svg>';
+      var SND_OFF = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor" stroke="none"/><path d="m16 9 5 6M21 9l-5 6"/></svg>';
+      var muteBtn = document.getElementById('muteBtn');
+      function renderMute(){
+        muteBtn.innerHTML = state.muted ? SND_OFF : SND_ON;
+        muteBtn.setAttribute('aria-pressed', state.muted ? 'true' : 'false');
+        muteBtn.setAttribute('aria-label', state.muted ? 'Sound off — tap to unmute' : 'Sound on — tap to mute');
+      }
+      muteBtn.addEventListener('click', function(){ state.muted = !state.muted; renderMute(); if (!state.muted) sfx.pop(); });
+      renderMute();
+
+      /* ================= Juice: flights, confetti, floaters ================= */
+      var fxLayer = document.getElementById('fxLayer');
+      var edgeGlow = document.getElementById('edgeGlow');
+      function setUrgency(on){ edgeGlow.classList.toggle('on', !!on); }
+      function rectOf(el){ return el ? el.getBoundingClientRect() : null; }
+      function popPill(){
+        var pill = document.getElementById('walletPill');
+        try { pill.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.16)' }, { transform: 'scale(1)' }], { duration: 300, easing: 'ease-out' }); } catch (e) {}
+      }
+      function flyCoins(rect, n, onLand){
+        var pill = document.getElementById('walletPill').getBoundingClientRect();
+        var sx = rect.left + rect.width / 2, sy = rect.top + rect.height / 2;
+        var tx = pill.left + pill.width / 2, ty = pill.top + pill.height / 2;
+        var count = Math.max(2, Math.min(8, Math.round(n / 6) + 1));
+        var credited = false;
+        function credit(){ if (!credited){ credited = true; if (onLand) onLand(); popPill(); } }
+        for (var i = 0; i < count; i++){
+          var c = document.createElement('div'); c.className = 'fly-coin'; c.textContent = 'S';
+          fxLayer.appendChild(c);
+          var dx = tx - sx, dy = ty - sy, arc = -50 - Math.random() * 70;
+          var anim = null;
+          try {
+            anim = c.animate([
+              { transform: 'translate(' + (sx - 11) + 'px,' + (sy - 11) + 'px) scale(1)', opacity: 1 },
+              { transform: 'translate(' + (sx - 11 + dx * 0.5) + 'px,' + (sy - 11 + dy * 0.5 + arc) + 'px) scale(.95)', opacity: 1, offset: 0.55 },
+              { transform: 'translate(' + (tx - 11) + 'px,' + (ty - 11) + 'px) scale(.5)', opacity: 0.9 }
+            ], { duration: 540 + Math.random() * 140, delay: i * 45, easing: 'cubic-bezier(.3,.6,.4,1)', fill: 'forwards' });
+          } catch (e) { c.remove(); credit(); continue; }
+          (function(el, a, last){
+            a.onfinish = function(){ el.remove(); if (last) credit(); };
+            a.oncancel = function(){ el.remove(); if (last) credit(); };
+          })(c, anim, i === count - 1);
+        }
+        /* The coins must land even if a coin animation is cancelled or
+           throttled — mobile browsers pause WAAPI in background tabs,
+           and a payout that depends on an animation finishing is a
+           payout that sometimes never arrives. */
+        setTimeout(credit, 1600);
+        sfx.coin();
+      }
+      function awardCoins(n, rect, label){
+        if (label) toast('<span class="amt">+' + n + ' coins</span>&nbsp;' + label);
+        if (!rect || reducedMotion){ state.coins += n; renderCoins(); popPill(); return; }
+        flyCoins(rect, n, function(){ state.coins += n; renderCoins(); });
+      }
+      function floater(rect, text, bad){
+        if (reducedMotion || !rect) return;
+        var f = document.createElement('div'); f.className = 'floater' + (bad ? ' bad' : ''); f.textContent = text;
+        fxLayer.appendChild(f);
+        var x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
+        try {
+          var a = f.animate([
+            { transform: 'translate(' + x + 'px,' + y + 'px) translate(-50%,-50%) scale(.8)', opacity: 0 },
+            { transform: 'translate(' + x + 'px,' + (y - 14) + 'px) translate(-50%,-50%) scale(1.1)', opacity: 1, offset: 0.25 },
+            { transform: 'translate(' + x + 'px,' + (y - 52) + 'px) translate(-50%,-50%) scale(1)', opacity: 0 }
+          ], { duration: 950, easing: 'ease-out', fill: 'forwards' });
+          a.onfinish = function(){ f.remove(); };
+        } catch (e) { f.remove(); }
+      }
+      function confetti(rect, count){
+        if (reducedMotion) return;
+        var cx = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
+        var cy = rect ? rect.top + rect.height / 2 : window.innerHeight / 3;
+        var colors = ['#f2cd63', '#d4a017', '#b8860b', '#e25822', '#dc2626', '#ffffff'];
+        var total = count || 42;
+        for (var i = 0; i < total; i++){
+          var b = document.createElement('div'); b.className = 'confetti-bit';
+          b.style.background = colors[i % colors.length];
+          fxLayer.appendChild(b);
+          var ang = Math.random() * Math.PI * 2, dist = 60 + Math.random() * 190;
+          var dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist - 70;
+          var fall = 190 + Math.random() * 240, rot = Math.random() * 540 - 270;
+          try {
+            var a = b.animate([
+              { transform: 'translate(' + cx + 'px,' + cy + 'px) rotate(0deg)', opacity: 1 },
+              { transform: 'translate(' + (cx + dx) + 'px,' + (cy + dy) + 'px) rotate(' + (rot * 0.6) + 'deg)', opacity: 1, offset: 0.45 },
+              { transform: 'translate(' + (cx + dx * 1.25) + 'px,' + (cy + dy + fall) + 'px) rotate(' + rot + 'deg)', opacity: 0 }
+            ], { duration: 1000 + Math.random() * 500, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards' });
+            (function(el, an){ an.onfinish = function(){ el.remove(); }; })(b, a);
+          } catch (e) { b.remove(); }
+        }
+      }
+      function burst(rect){
+        if (reducedMotion || !rect) return;
+        var cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+        for (var i = 0; i < 9; i++){
+          var d = document.createElement('div'); d.className = 'burst-dot';
+          fxLayer.appendChild(d);
+          var ang = (i / 9) * Math.PI * 2 + Math.random() * 0.5, dist = 38 + Math.random() * 34;
+          try {
+            var a = d.animate([
+              { transform: 'translate(' + (cx - 4) + 'px,' + (cy - 4) + 'px) scale(1)', opacity: 1 },
+              { transform: 'translate(' + (cx - 4 + Math.cos(ang) * dist) + 'px,' + (cy - 4 + Math.sin(ang) * dist) + 'px) scale(.3)', opacity: 0 }
+            ], { duration: 420, easing: 'ease-out', fill: 'forwards' });
+            (function(el, an){ an.onfinish = function(){ el.remove(); }; })(d, a);
+          } catch (e) { d.remove(); }
+        }
+      }
+
+      /* ================= Personal bests ================= */
+      function renderBests(){
+        $('bestReflex').textContent = state.bests.reflex ? state.bests.reflex + ' ms' : 'Not set yet';
+        $('bestTrivia').textContent = state.bests.trivia >= 0 ? state.bests.trivia + ' / 10 correct' : 'Not set yet';
+        $('bestWord').textContent = state.bests.word >= 0 ? state.bests.word + ' word' + (state.bests.word === 1 ? '' : 's') + ' forged' : 'Not set yet';
+      }
+      renderBests();
+
+      /* ================= Juice helpers: gold flash + hints + particles ================= */
+      function goldFlash(){
+        if (reducedMotion) return;
+        var g = document.getElementById('goldFlash'); if (!g) return;
+        g.classList.remove('go'); void g.offsetWidth; g.classList.add('go');
+      }
+      Array.prototype.forEach.call(document.querySelectorAll('[data-dismiss-hint]'), function(btn){
+        btn.addEventListener('click', function(){
+          var el = document.getElementById(btn.getAttribute('data-dismiss-hint'));
+          if (el) el.style.display = 'none';
+        });
+      });
+      (function initParticles(){
+        if (reducedMotion) return;
+        var cv = document.getElementById('bgCanvas'); if (!cv || !cv.getContext) return;
+        var ctx = cv.getContext('2d'); var W, H, parts = [];
+        function size(){ W = cv.width = window.innerWidth; H = cv.height = window.innerHeight; }
+        size(); window.addEventListener('resize', size);
+        for (var i = 0; i < 42; i++) parts.push({ x: Math.random(), y: Math.random(), r: 1 + Math.random() * 2.4, s: .12 + Math.random() * .35, d: Math.random() * Math.PI * 2, o: .25 + Math.random() * .55 });
+        (function loop(t){
+          ctx.clearRect(0, 0, W, H);
+          for (var j = 0; j < parts.length; j++){
+            var p = parts[j];
+            p.y -= p.s / Math.max(600, H); p.x += Math.sin((t || 0) / 2200 + p.d) * .00025;
+            if (p.y < -0.02){ p.y = 1.02; p.x = Math.random(); }
+            ctx.beginPath(); ctx.arc(p.x * W, p.y * H, p.r, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,217,77,' + p.o + ')'; ctx.fill();
+          }
+          requestAnimationFrame(loop);
+        })(0);
+      })();
+
+      /* ================= Views — instant play ================= */
+      var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+      function maybeAutoStart(name){
+        try {
+          if (name === 'trivia'){
+            var playing = !$('triviaPlay').hidden;
+            var ended = !$('triviaEnd').hidden;
+            if (!playing || ended) startTrivia();
+          } else if (name === 'word'){
+            if (!W.active && $('wordPlay').hidden) startWord();
+          }
+        } catch (e) {}
+      }
+      function showView(name, autostart){
+        setUrgency(false);
+        if (name === 'lobby' && typeof CG !== 'undefined') CG.playStop();
+        Array.prototype.forEach.call(document.querySelectorAll('.view'), function(v){ v.classList.remove('on'); });
+        document.getElementById('view-' + name).classList.add('on');
+        tabs.forEach(function(t){ t.classList.toggle('on', t.getAttribute('data-view') === name); });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (autostart) maybeAutoStart(name);
+      }
+      tabs.forEach(function(t){ t.addEventListener('click', function(){
+        var v = t.getAttribute('data-view');
+        showView(v, v === 'trivia' || v === 'word');
+      }); });
+      Array.prototype.forEach.call(document.querySelectorAll('[data-goto]'), function(b){
+        b.addEventListener('click', function(){
+          var v = b.getAttribute('data-goto');
+          var auto = b.getAttribute('data-autostart') || (b.classList.contains('game-card') ? v : null);
+          showView(v, !!auto || v === 'trivia' && b.classList.contains('game-card') || v === 'word' && b.classList.contains('game-card'));
+        });
+      });
+      document.getElementById('walletPill').addEventListener('click', function(){ showView('lobby'); });
+      document.getElementById('earnBtnTop').addEventListener('click', function(){ showView('lobby'); setTimeout(function(){ openAd(); }, 80); });
+
+      /* ================= Daily bonus ================= */
+      document.getElementById('dailyBtn').addEventListener('click', function(){
+        if (state.dailyClaimed) return;
+        state.dailyClaimed = true;
+        this.disabled = true; this.textContent = 'Claimed ✓';
+        document.getElementById('dailyStatus').textContent = 'Claimed — come back tomorrow for another 100.';
+        awardCoins(100, rectOf(this), 'daily bonus claimed');
+        sfx.ding();
+      });
+
+      /* ================= CrazyGames SDK =================
+         The only external script this build loads is the CrazyGames SDK
+         (in the head). Every call is guarded: with no SDK present (local
+         preview or another host) the game runs fully and rewarded ads
+         fall back to a short simulated spot — it never crashes. */
+      var adAudioMuted = false;
+      function muteForAd(on){
+        adAudioMuted = !!on;
+        if (on){ try { if (AC && AC.state === 'running') AC.suspend(); } catch (e) {} }
+        else if (!state.muted){ try { if (AC && AC.state === 'suspended') AC.resume(); } catch (e) {} }
+      }
+      var CG = { sdk: null, ready: false, loadingStopped: false, playing: false, lastMid: 0,
+        init: function(){
+          try {
+            if (!window.CrazyGames || !window.CrazyGames.SDK || typeof window.CrazyGames.SDK.init !== 'function'){ CG.sdk = null; return; }
+            CG.sdk = window.CrazyGames.SDK;
+            /* SDK v3: init() MUST resolve before any other SDK module
+               (game / ad) is touched — calling them earlier logs
+               "CrazySDK is not initialized yet" and the calls fail,
+               which is what left the Watch button dead. */
+            var p = CG.sdk.init();
+            if (p && typeof p.then === 'function'){
+              p.then(function(){
+                CG.ready = true;
+                try { if (CG.sdk.game && CG.sdk.game.gameLoadingStart) CG.sdk.game.gameLoadingStart(); } catch (e) {}
+                CG.loadingStop();
+                if (CG.playing){ CG.playing = false; CG.playStart(); }
+              }, function(){ CG.sdk = null; CG.ready = false; });
+            } else {
+              CG.ready = true;
+              CG.loadingStop();
+            }
+          } catch (e) { CG.sdk = null; CG.ready = false; }
+        },
+        loadingStop: function(){
+          if (CG.loadingStopped) return;
+          if (CG.sdk && !CG.ready) return; /* wait for init — retried from the init handler */
+          CG.loadingStopped = true;
+          try { if (CG.ready && CG.sdk && CG.sdk.game && CG.sdk.game.gameLoadingStop) CG.sdk.game.gameLoadingStop(); } catch (e) {}
+        },
+        playStart: function(){
+          if (CG.playing) return; CG.playing = true;
+          if (!CG.ready) return; /* intent recorded — fired once init resolves */
+          try { if (CG.sdk && CG.sdk.game && CG.sdk.game.gameplayStart) CG.sdk.game.gameplayStart(); } catch (e) {}
+        },
+        playStop: function(){
+          if (!CG.playing) return; CG.playing = false;
+          if (!CG.ready) return;
+          try { if (CG.sdk && CG.sdk.game && CG.sdk.game.gameplayStop) CG.sdk.game.gameplayStop(); } catch (e) {}
+        },
+        happy: function(){
+          if (!CG.ready) return;
+          try { if (CG.sdk && CG.sdk.game && CG.sdk.game.happytime) CG.sdk.game.happytime(); } catch (e) {}
+        },
+        hasAds: function(){ return !!(CG.ready && CG.sdk && CG.sdk.ad && typeof CG.sdk.ad.requestAd === 'function'); },
+        requestAd: function(type, done, onStart){
+          if (!CG.hasAds()){ done('unavailable'); return; }
+          muteForAd(true);
+          var settled = false;
+          function finish(result){ if (settled) return; settled = true; muteForAd(false); done(result); }
+          var started = false;
+          var callbacks = {
+            adStarted: function(){ started = true; if (onStart) onStart(); },
+            adFinished: function(){ finish('finished'); },
+            adError: function(){ finish('error'); }
+          };
+          try { CG.sdk.ad.requestAd({ adType: type }, callbacks); }
+          catch (e) {
+            try { CG.sdk.ad.requestAd(type, callbacks); }
+            catch (e2) { finish('unavailable'); return; }
+          }
+          /* If the ad never even starts, don't leave the player staring
+             at a dead button — give up fast so the fallback spot can run.
+             Outside the portal the SDK can accept the request and then
+             never call any callback at all, which is exactly the dead
+             tap this guards against. */
+          setTimeout(function(){ if (!started) finish('error'); }, 2500);
+          setTimeout(function(){ finish('error'); }, 40000);
+        },
+        midgame: function(){
+          if (!CG.hasAds()) return;
+          var now = Date.now();
+          if (now - CG.lastMid < 120000) return;
+          CG.lastMid = now;
+          CG.requestAd('midgame', function(){});
+        }
+      };
+
+      /* ================= Rewarded ads =================
+         SDK rewarded ad when the portal serves one; otherwise a short
+         simulated spot in the modal below. Reward: +50 coins, then a
+         20-second cooldown. Coins are never ad-only — playing and the
+         free daily bonus pay too. */
+      var adTimer = null;
+      var adInProgress = false;
+      var adSession = 0;
+      var adOverlay = document.getElementById('adOverlay');
+      function updateAdBtn(){
+        var btn = document.getElementById('watchAdBtn');
+        var left = Math.ceil((state.adCooldownUntil - Date.now()) / 1000);
+        if (left > 0){ btn.disabled = true; btn.textContent = 'Next ad in ' + left + 's'; setTimeout(updateAdBtn, 1000); }
+        else if (!adInProgress){ btn.disabled = false; btn.textContent = 'Watch'; }
+      }
+      function grantAdReward(rect){
+        state.adCooldownUntil = Date.now() + 20000;
+        awardCoins(50, rect, 'rewarded ad watched');
+        updateAdBtn();
+      }
+      /* The sponsor modal opens the instant Watch is tapped, in every
+         environment — the tap always produces visible feedback, whatever
+         the ad SDK goes on to do. If the portal serves a real rewarded
+         ad it plays over the modal and finishing it pays out directly;
+         if the SDK errors, never starts, or isn't there at all, the
+         modal's own short sponsor spot runs and its Claim button pays
+         the same 50 coins. No path waits silently on the SDK. */
+      function openAd(){
+        if (Date.now() < state.adCooldownUntil) return;
+        if (adInProgress || adOverlay.classList.contains('open')) return;
+        adInProgress = true;
+        var session = ++adSession;
+        var btn = document.getElementById('watchAdBtn');
+        btn.disabled = true; btn.textContent = 'Ad playing…';
+        openAdModal();
+        if (CG.hasAds()){
+          setAdPhase('loading');
+          CG.requestAd('rewarded', function(result){
+            if (session !== adSession || !adInProgress) return;
+            if (result === 'finished'){
+              closeAdModal();
+              grantAdReward(rectOf(btn));
+              sfx.ding();
+            } else {
+              /* No ad from the portal (no fill, an error, or it never
+                 started): the sponsor spot already on screen takes
+                 over and pays out through Claim. */
+              setAdPhase('sim');
+            }
+          }, function(){
+            if (session === adSession && adInProgress) setAdPhase('sdk');
+          });
+        } else {
+          setAdPhase('sim');
+        }
+      }
+      function openAdModal(){
+        var claim = document.getElementById('adClaimBtn');
+        var fill = document.getElementById('adFill');
+        claim.disabled = true; claim.textContent = 'Claim 50 coins';
+        fill.style.transition = 'none'; fill.style.width = '0%';
+        muteForAd(true);
+        adOverlay.classList.add('open');
+      }
+      function closeAdModal(){
+        clearInterval(adTimer);
+        adSession++;
+        adInProgress = false;
+        muteForAd(false);
+        adOverlay.classList.remove('open');
+        updateAdBtn();
+      }
+      function setAdPhase(phase){
+        var claim = document.getElementById('adClaimBtn');
+        var fill = document.getElementById('adFill');
+        var countText = document.getElementById('adCountText');
+        clearInterval(adTimer);
+        if (phase === 'loading'){
+          claim.disabled = true;
+          countText.textContent = 'Loading your sponsor spot…';
+        } else if (phase === 'sdk'){
+          claim.disabled = true;
+          countText.textContent = 'Ad playing — your 50 coins land the moment it finishes.';
+          fill.style.transition = 'none'; fill.style.width = '100%';
+        } else {
+          /* Simulated sponsor spot: 3-second countdown, then Claim. */
+          muteForAd(true);
+          claim.disabled = true;
+          fill.style.transition = 'none'; fill.style.width = '0%';
+          var secs = 3; countText.textContent = 'Your 50 coins land in ' + secs + 's…';
+          requestAnimationFrame(function(){ requestAnimationFrame(function(){ fill.style.transition = 'width 3s linear'; fill.style.width = '100%'; }); });
+          adTimer = setInterval(function(){
+            secs--;
+            if (secs > 0){ countText.textContent = 'Your 50 coins land in ' + secs + 's…'; }
+            else { clearInterval(adTimer); countText.textContent = 'Ad complete — claim your reward.'; claim.disabled = false; muteForAd(false); }
+          }, 1000);
+        }
+      }
+      document.getElementById('adClaimBtn').addEventListener('click', function(){
+        var r = rectOf(this);
+        closeAdModal();
+        grantAdReward(r);
+      });
+      document.getElementById('watchAdBtn').addEventListener('click', openAd);
+
+      /* ================= Helpers ================= */
+      function shuffle(a){ for (var i = a.length - 1; i > 0; i--){ var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+      function $(id){ return document.getElementById(id); }
+
+      /* ================= TRIVIA ================= */
+      var QUESTIONS = [
+        { c:'Science', q:'What planet is known as the Red Planet?', o:['Venus','Mars','Jupiter','Mercury'], a:1 },
+        { c:'Science', q:'What is the chemical symbol for gold?', o:['Gd','Ag','Au','Go'], a:2 },
+        { c:'Science', q:'How many sides does a hexagon have?', o:['5','7','6','8'], a:2 },
+        { c:'Science', q:'Which organ pumps blood through the human body?', o:['Liver','Brain','Lung','Heart'], a:3 },
+        { c:'History', q:'In what year did humans first land on the Moon?', o:['1969','1959','1975','1981'], a:0 },
+        { c:'History', q:'Who painted the Mona Lisa?', o:['Van Gogh','Picasso','Da Vinci','Rembrandt'], a:2 },
+        { c:'Geography', q:'What is the capital of Kentucky?', o:['Louisville','Lexington','Frankfort','Bowling Green'], a:2 },
+        { c:'Geography', q:'Which is the largest ocean on Earth?', o:['Atlantic','Indian','Arctic','Pacific'], a:3 },
+        { c:'Geography', q:'The Ohio River forms Kentucky\u2019s border on which side?', o:['South','North','East','West'], a:1 },
+        { c:'Sports', q:'How many players does a basketball team have on the court at once?', o:['4','6','5','7'], a:2 },
+        { c:'Sports', q:'In American football, a touchdown is worth how many points?', o:['3','6','7','2'], a:1 },
+        { c:'Sports', q:'The Kentucky Derby is run in which city?', o:['Lexington','Louisville','Frankfort','Covington'], a:1 },
+        { c:'Tech', q:'What does \u201CHTTP\u201D stand for at the start of a web address?', o:['HyperText Transfer Protocol','High Tech Transfer Process','HyperText Transmission Program','Host Text Transfer Protocol'], a:0 },
+        { c:'Tech', q:'Which company makes the iPhone?', o:['Samsung','Google','Apple','Microsoft'], a:2 },
+        { c:'Words', q:'Which word is a synonym for \u201Crapid\u201D?', o:['Slow','Swift','Calm','Dull'], a:1 },
+        { c:'Words', q:'What is the plural of \u201Coctopus\u201D?', o:['Octopi','Octopuses','Octopodes','Octopus'], a:1 },
+        { c:'Math', q:'What is 15% of 200?', o:['20','25','30','35'], a:2 },
+        { c:'Math', q:'What comes next: 2, 6, 12, 20, …?', o:['24','28','30','32'], a:2 },
+        { c:'Nature', q:'How many legs does a spider have?', o:['6','10','8','12'], a:2 },
+        { c:'Nature', q:'What do bees produce?', o:['Milk','Silk','Honey','Wax only'], a:2 }
+      ];
+      var T = { list:[], idx:0, score:0, streak:0, earned:0, timer:null, left:15, locked:false, hintUsed:false, lastTick:99 };
+      function tCleanup(){ if (T.timer){ clearInterval(T.timer); T.timer = null; } }
+      function streakMult(){ return T.streak >= 5 ? 3 : T.streak >= 3 ? 2 : 1; }
+      function renderStreak(){
+        $('tStreak').textContent = T.streak;
+        var hot = T.streak >= 3;
+        $('tFlame').hidden = !hot;
+        if (hot) $('tMult').textContent = '×' + streakMult();
+        $('tStreakStat').classList.toggle('hot', hot);
+      }
+      function startTrivia(){
+        tCleanup(); CG.playStart();
+        T.list = shuffle(QUESTIONS.slice()).slice(0, 10);
+        T.idx = 0; T.score = 0; T.streak = 0; T.earned = 0;
+        $('triviaStart').hidden = true; $('triviaEnd').hidden = true; $('triviaPlay').hidden = false;
+        showTQuestion();
+      }
+      function showTQuestion(){
+        tCleanup();
+        var item = T.list[T.idx];
+        T.locked = false; T.hintUsed = false; T.left = 15;
+        $('tQNum').textContent = (T.idx + 1) + ' / 10';
+        $('tScore').textContent = T.score;
+        renderStreak();
+        $('tEarned').textContent = T.earned + ' coins';
+        $('tCat').textContent = item.c;
+        $('tText').textContent = item.q;
+        $('tFeedback').textContent = ''; $('tFeedback').className = 'feedback';
+        $('tHintBtn').disabled = false;
+        var order = shuffle(item.o.map(function(_, i){ return i; }));
+        var box = $('tOpts'); box.innerHTML = '';
+        order.forEach(function(origIdx, pos){
+          var b = document.createElement('button');
+          b.type = 'button'; b.className = 'opt'; b.setAttribute('data-orig', origIdx);
+          b.innerHTML = '<span class="letter">' + 'ABCD'[pos] + '</span><span></span>';
+          b.querySelector('span:last-child').textContent = item.o[origIdx];
+          b.addEventListener('click', function(){ answerTrivia(origIdx, b); });
+          box.appendChild(b);
+        });
+        var fill = $('tTimerFill'); fill.style.width = '100%';
+        $('tTimerBar').classList.remove('low'); $('tTimerBar').classList.remove('urgent');
+        setUrgency(false); T.lastTick = 99;
+        T.timer = setInterval(function(){
+          T.left = Math.max(0, T.left - 0.1);
+          fill.style.width = (T.left / 15 * 100) + '%';
+          var urgent = T.left <= 5 && T.left > 0;
+          $('tTimerBar').classList.toggle('low', T.left <= 5);
+          $('tTimerBar').classList.toggle('urgent', urgent);
+          var inView = $('view-trivia').classList.contains('on');
+          setUrgency(urgent && inView);
+          var sec = Math.ceil(T.left);
+          if (urgent && inView && sec !== T.lastTick){ T.lastTick = sec; sfx.tick(5 - sec); }
+          if (T.left <= 0){ tCleanup(); timeOutTrivia(); }
+        }, 100);
+      }
+      function lockOpts(chosenBtn, correctOrig){
+        Array.prototype.forEach.call($('tOpts').children, function(b){
+          b.disabled = true;
+          if (parseInt(b.getAttribute('data-orig'), 10) === correctOrig) b.classList.add('right');
+          else if (b === chosenBtn) b.classList.add('wrong');
+          else b.classList.add('dim');
+        });
+      }
+      function answerTrivia(origIdx, btn){
+        if (T.locked) return; T.locked = true; tCleanup();
+        setUrgency(false); $('tTimerBar').classList.remove('urgent');
+        var item = T.list[T.idx];
+        lockOpts(btn, item.a);
+        if (origIdx === item.a){
+          T.score++; T.streak++;
+          var base = 10 + (T.left >= 8 ? 5 : 0);
+          var mult = streakMult();
+          var pay = base * mult;
+          T.earned += pay;
+          var r = rectOf(btn);
+          awardCoins(pay, r, '');
+          floater(r, '+' + pay + ' ✦');
+          burst(r); goldFlash();
+          sfx.ding(); buzz(18);
+          renderStreak();
+          $('tEarned').textContent = T.earned + ' coins';
+          $('tScore').textContent = T.score;
+          $('tFeedback').textContent = '✓ Correct! +' + pay + ' coins' + (mult > 1 ? ' — streak ×' + mult + '!' : (T.left >= 8 ? ' (includes +5 speed bonus)' : ''));
+          $('tFeedback').className = 'feedback good pop';
+          if (T.streak === 3 || T.streak === 5){ confetti(rectOf($('tOpts')), T.streak === 5 ? 60 : 36); sfx.win(); }
+        } else {
+          T.streak = 0; renderStreak();
+          btn.classList.add('shake');
+          sfx.wrong(); buzz([45, 40, 45]);
+          $('tFeedback').textContent = 'Not quite — the answer was \u201C' + item.o[item.a] + '\u201D.';
+          $('tFeedback').className = 'feedback bad';
+        }
+        setTimeout(nextT, 1500);
+      }
+      function timeOutTrivia(){
+        if (T.locked) return; T.locked = true;
+        setUrgency(false); $('tTimerBar').classList.remove('urgent');
+        var item = T.list[T.idx];
+        lockOpts(null, item.a);
+        T.streak = 0; renderStreak();
+        sfx.wrong(); buzz([45, 40, 45]);
+        $('tFeedback').textContent = 'Time\u2019s up — the answer was \u201C' + item.o[item.a] + '\u201D.';
+        $('tFeedback').className = 'feedback bad';
+        setTimeout(nextT, 1500);
+      }
+      function nextT(){
+        T.idx++;
+        if (T.idx >= T.list.length){
+          $('triviaPlay').hidden = true; $('triviaEnd').hidden = false;
+          CG.playStop(); CG.midgame();
+          $('tEndTitle').textContent = T.score >= 8 ? 'Sharp. Very sharp.' : (T.score >= 5 ? 'Solid run.' : 'Run complete');
+          var beatT = T.score > state.bests.trivia;
+          if (beatT){ state.bests.trivia = T.score; renderBests(); }
+          $('tEndText').textContent = 'You answered ' + T.score + ' of 10 correctly and banked ' + T.earned + ' coins. They\u2019re already in your wallet.' + (beatT ? ' That\u2019s a new personal best!' : '');
+          if (T.score >= 7 || beatT){ confetti(null, 70); sfx.win(); }
+          if (beatT){ CG.happy(); toast('New personal best — ' + T.score + ' / 10 on Trivia Rush', 3200); }
+        } else showTQuestion();
+      }
+      $('tHintBtn').addEventListener('click', function(){
+        if (T.hintUsed || T.locked) return;
+        if (!spendCoins(15, 'trivia hint used')) return;
+        T.hintUsed = true; this.disabled = true;
+        var item = T.list[T.idx];
+        var wrong = Array.prototype.filter.call($('tOpts').children, function(b){ return parseInt(b.getAttribute('data-orig'), 10) !== item.a && !b.disabled; });
+        shuffle(wrong).slice(0, 2).forEach(function(b){ b.disabled = true; b.classList.add('dim'); });
+      });
+      $('triviaStartBtn').addEventListener('click', startTrivia);
+      $('triviaAgainBtn').addEventListener('click', startTrivia);
+
+      /* ================= WORD FORGE ================= */
+      var WORDS = [
+        { w:'FORGE', h:'Where metal gets shaped by fire and hammer' },
+        { w:'ARCADE', h:'A place full of coin-op games' },
+        { w:'PUZZLE', h:'It tests your brain until the pieces click' },
+        { w:'ROCKET', h:'It blasts off toward space' },
+        { w:'GUITAR', h:'Six strings, endless songs' },
+        { w:'BRIDGE', h:'It carries you over the river' },
+        { w:'MARKET', h:'Where buyers and sellers meet' },
+        { w:'CASTLE', h:'A king\u2019s fortified home' },
+        { w:'THUNDER', h:'It follows lightning' },
+        { w:'JOURNEY', h:'A long trip with a story in it' },
+        { w:'VICTORY', h:'Earned, not given — the win itself' },
+        { w:'CAPTAIN', h:'The one steering the ship' },
+        { w:'DIAMOND', h:'The hardest gem, cut to shine' },
+        { w:'HARVEST', h:'Gathering the crops in fall' },
+        { w:'LANTERN', h:'Old-school portable light' },
+        { w:'MYSTERY', h:'A question nobody has solved yet' },
+        { w:'PIONEER', h:'The first one to go somewhere new' },
+        { w:'STADIUM', h:'Where the crowd watches the game' },
+        { w:'VOLCANO', h:'A mountain that erupts' },
+        { w:'WHISPER', h:'Talking as quietly as possible' },
+        { w:'KENTUCKY', h:'The Bluegrass State' },
+        { w:'CHAMPION', h:'The one holding the trophy' },
+        { w:'BACKYARD', h:'Where the grill and the games live' },
+        { w:'NOTEBOOK', h:'Full of ideas, lists, and sketches' }
+      ];
+      var W = { queue:[], cur:null, scrambled:'', revealed:{}, left:60, timer:null, solved:0, earned:0, active:false, celebrating:false, lastTick:99 };
+      function wCleanup(){ if (W.timer){ clearInterval(W.timer); W.timer = null; } W.active = false; }
+      function scrambleWord(w){
+        var arr = w.split('');
+        for (var tries = 0; tries < 12; tries++){ shuffle(arr); if (arr.join('') !== w) break; }
+        return arr.join('');
+      }
+      function startWord(){
+        wCleanup(); CG.playStart();
+        W.queue = shuffle(WORDS.slice()); W.solved = 0; W.earned = 0; W.left = 60; W.active = true; W.celebrating = false; W.lastTick = 99;
+        $('wordStart').hidden = true; $('wordEnd').hidden = true; $('wordPlay').hidden = false;
+        $('wSolvedList').innerHTML = '';
+        nextWord(); updateWHud();
+        W.timer = setInterval(function(){
+          W.left = Math.max(0, W.left - 0.1); updateWHud();
+          $('wTimerBar').classList.toggle('urgent', W.left <= 5 && W.left > 0);
+          var sec = Math.ceil(W.left);
+          if (W.left <= 5 && W.left > 0 && sec !== W.lastTick){ W.lastTick = sec; sfx.tick(5 - sec); }
+          if (W.left <= 0){ endWord(); }
+        }, 100);
+        $('wInput').focus();
+      }
+      function updateWHud(){
+        $('wTime').textContent = Math.ceil(W.left) + 's';
+        $('wSolved').textContent = W.solved;
+        $('wEarned').textContent = W.earned + ' coins';
+        $('wTimerFill').style.width = (W.left / 60 * 100) + '%';
+        $('wTimerBar').classList.toggle('low', W.left <= 10);
+      }
+      function nextWord(){
+        if (!W.queue.length) W.queue = shuffle(WORDS.slice());
+        W.cur = W.queue.pop();
+        W.scrambled = scrambleWord(W.cur.w);
+        W.revealed = {};
+        renderTiles();
+        $('wHint').textContent = W.cur.h;
+        $('wLen').textContent = W.cur.w.length;
+        $('wInput').value = '';
+        $('wFeedback').textContent = ''; $('wFeedback').className = 'feedback';
+      }
+      function renderTiles(){
+        var box = $('wTiles'); box.innerHTML = '';
+        W.scrambled.split('').forEach(function(ch, i){
+          var d = document.createElement('div'); d.className = 'tile';
+          d.style.animationDelay = (i * 45) + 'ms';
+          /* If this position's true letter has been revealed, show the answer letter in place order */
+          d.textContent = ch; box.appendChild(d);
+        });
+        /* Overlay reveals: mark tiles whose letter matches a revealed position letter */
+        Object.keys(W.revealed).forEach(function(pos){
+          var letter = W.cur.w[parseInt(pos, 10)];
+          var tiles = box.children;
+          for (var i = 0; i < tiles.length; i++){
+            if (tiles[i].textContent === letter && !tiles[i].classList.contains('revealed')){ tiles[i].classList.add('revealed'); break; }
+          }
+        });
+      }
+      function celebrateTiles(){
+        var box = $('wTiles'); box.innerHTML = '';
+        W.cur.w.split('').forEach(function(ch, i){
+          var d = document.createElement('div'); d.className = 'tile revealed';
+          d.textContent = ch; d.style.animationDelay = (i * 70) + 'ms';
+          box.appendChild(d);
+          setTimeout(function(){ sfx.flip(); }, 120 + i * 70);
+        });
+        confetti(rectOf(box), 26);
+      }
+      $('wForm').addEventListener('submit', function(e){
+        e.preventDefault();
+        if (!W.active) return;
+        var guess = $('wInput').value.trim().toUpperCase();
+        if (!guess) return;
+        if (guess === W.cur.w){
+          if (W.celebrating) return;
+          W.celebrating = true;
+          var pay = 20 + W.cur.w.length * 2;
+          W.solved++; W.earned += pay;
+          var chip = document.createElement('span'); chip.className = 'chip gold'; chip.textContent = W.cur.w + ' +' + pay;
+          $('wSolvedList').appendChild(chip);
+          $('wFeedback').textContent = '✓ Forged! \u201C' + W.cur.w + '\u201D — +' + pay + ' coins';
+          $('wFeedback').className = 'feedback good pop';
+          var trect = rectOf($('wTiles'));
+          awardCoins(pay, trect, '');
+          floater(trect, '+' + pay + ' ✦'); burst(trect); goldFlash();
+          sfx.ding(); buzz(18);
+          celebrateTiles();
+          updateWHud();
+          setTimeout(function(){ W.celebrating = false; if (W.active){ nextWord(); $('wInput').focus(); } }, 1000);
+        } else {
+          $('wFeedback').textContent = '\u201C' + guess + '\u201D isn\u2019t it — keep hammering.';
+          $('wFeedback').className = 'feedback bad';
+          $('wTiles').classList.remove('shake'); void $('wTiles').offsetWidth; $('wTiles').classList.add('shake');
+          sfx.wrong(); buzz(30);
+          $('wInput').select();
+        }
+      });
+      $('wRevealBtn').addEventListener('click', function(){
+        if (!W.active) return;
+        var hidden = [];
+        for (var i = 0; i < W.cur.w.length; i++) if (!W.revealed[i]) hidden.push(i);
+        if (!hidden.length) return;
+        if (!spendCoins(10, 'letter revealed')) return;
+        var pos = hidden[Math.floor(Math.random() * hidden.length)];
+        W.revealed[pos] = true; renderTiles(); sfx.flip(); buzz(10);
+        $('wFeedback').textContent = 'Letter ' + (pos + 1) + ' of \u201C' + W.cur.w.length + '\u201D is \u201C' + W.cur.w[pos] + '\u201D.';
+        $('wFeedback').className = 'feedback';
+      });
+      $('wTimeBtn').addEventListener('click', function(){
+        if (!W.active) return;
+        if (!spendCoins(25, '+15 seconds bought')) return;
+        W.left += 15; updateWHud();
+      });
+      $('wSkipBtn').addEventListener('click', function(){
+        if (!W.active) return;
+        $('wFeedback').textContent = 'Skipped — that one was \u201C' + W.cur.w + '\u201D.';
+        $('wFeedback').className = 'feedback';
+        nextWord(); $('wInput').focus();
+      });
+      function endWord(){
+        wCleanup(); CG.playStop(); CG.midgame();
+        $('wordPlay').hidden = true; $('wordEnd').hidden = false;
+        $('wTimerBar').classList.remove('urgent');
+        var beatW = W.solved > state.bests.word;
+        if (beatW){ state.bests.word = W.solved; renderBests(); }
+        $('wEndText').textContent = 'You forged ' + W.solved + ' word' + (W.solved === 1 ? '' : 's') + ' and banked ' + W.earned + ' coins. They\u2019re already in your wallet.' + (beatW && W.solved > 0 ? ' That\u2019s a new personal best!' : '');
+        if (W.solved >= 5 || (beatW && W.solved > 0)){ confetti(null, 60); sfx.win(); }
+        if (beatW && W.solved > 0){ CG.happy(); toast('New personal best — ' + W.solved + ' words forged', 3200); }
+      }
+      $('wordStartBtn').addEventListener('click', startWord);
+      $('wordAgainBtn').addEventListener('click', startWord);
+
+      /* ================= REACTION — Reflex ================= */
+      var R = { phase:'idle', round:0, times:[], earned:0, timeout:null, expire:null, goAt:0, missed:0 };
+      var reactBox = $('reactBox');
+      /* Speed-scaled payout: lightning pays 15, ~500ms pays 5, slower pays less.
+         The green pad fades after 1s (see expireReflex) — slower than that pays 0. */
+      function rPay(ms){ return ms < 250 ? 15 : ms < 350 ? 11 : ms < 450 ? 8 : ms < 550 ? 5 : ms < 700 ? 3 : 2; }
+      function setRB(big, sub, cls){
+        $('rbBig').textContent = big; $('rbSub').textContent = sub;
+        reactBox.className = 'react-box' + (cls ? ' ' + cls : '');
+      }
+      function startReflexRound(){
+        R.phase = 'waiting';
+        setRB('Wait for green…', 'Round ' + (R.round + 1) + ' of 3. Tap the instant it flips.', 'wait');
+        $('rRound').textContent = (R.round + 1) + ' / 3';
+        clearTimeout(R.timeout);
+        R.timeout = setTimeout(function(){
+          R.phase = 'go'; R.goAt = performance.now();
+          setRB('TAP!', 'Now — one second before it fades.', 'go');
+          sfx.pop();
+          clearTimeout(R.expire);
+          R.expire = setTimeout(expireReflex, 1000);
+        }, 1200 + Math.random() * 2800);
+      }
+      function expireReflex(){
+        if (R.phase !== 'go') return;
+        R.missed++; R.round++;
+        sfx.wrong(); buzz([50, 30, 50]);
+        $('rLast').textContent = 'too slow';
+        reactBox.classList.add('shake'); setTimeout(function(){ reactBox.classList.remove('shake'); }, 420);
+        if (R.round >= 3){ finishReflex(); }
+        else {
+          R.phase = 'between';
+          setRB('Too slow!', 'The green faded before you tapped — no coins for that round. Tap for round ' + (R.round + 1) + ' of 3.', '');
+        }
+      }
+      function finishReflex(){
+        R.phase = 'done'; CG.playStop(); CG.midgame();
+        var good = R.times;
+        var best = good.length ? Math.min.apply(null, good) : null;
+        var avg = good.length ? Math.round(good.reduce(function(a, b){ return a + b; }, 0) / good.length) : null;
+        var beatR = best !== null && (state.bests.reflex === null || best < state.bests.reflex);
+        if (beatR){ state.bests.reflex = best; renderBests(); }
+        var summary = good.length ? ('Best: ' + best + ' ms · Average: ' + avg + ' ms · ') : 'No clean taps that run. ';
+        setRB(good.length ? (avg + ' ms average') : 'Run complete', summary + 'You banked ' + R.earned + ' coins.' + (beatR ? ' New personal best!' : '') + ' Tap to run it back.', '');
+        if (beatR){ confetti(rectOf(reactBox), 55); sfx.win(); CG.happy(); toast('New personal best — ' + best + ' ms reflex', 3200); }
+      }
+      reactBox.addEventListener('click', function(){
+        if (R.phase === 'idle' || R.phase === 'done'){
+          CG.playStart();
+          R.round = 0; R.times = []; R.earned = 0; R.missed = 0; clearTimeout(R.expire);
+          $('rEarned').textContent = '0 coins'; $('rLast').textContent = '— ms'; $('rBest').textContent = '— ms';
+          startReflexRound();
+        } else if (R.phase === 'waiting'){
+          clearTimeout(R.timeout);
+          setRB('Too soon!', 'You tapped before green — no coins for that round. Tap to try the round again.', '');
+          sfx.wrong(); buzz(40);
+          reactBox.classList.add('shake'); setTimeout(function(){ reactBox.classList.remove('shake'); }, 420);
+          R.phase = 'early';
+        } else if (R.phase === 'early'){
+          startReflexRound();
+        } else if (R.phase === 'go'){
+          clearTimeout(R.expire);
+          var ms = Math.round(performance.now() - R.goAt);
+          var pay = rPay(ms);
+          R.times.push(ms); R.earned += pay;
+          var rr = rectOf(reactBox);
+          awardCoins(pay, rr, '');
+          floater(rr, ms + ' ms · +' + pay + ' ✦'); burst(rr); if (ms < 250) goldFlash();
+          sfx.ding(); buzz(15);
+          $('rLast').textContent = ms + ' ms';
+          $('rBest').textContent = Math.min.apply(null, R.times) + ' ms';
+          $('rEarned').textContent = R.earned + ' coins';
+          R.round++;
+          if (R.round >= 3){
+            finishReflex();
+          } else {
+            R.phase = 'between';
+            setRB(ms + ' ms — +' + pay + ' coins', 'Tap for round ' + (R.round + 1) + ' of 3.', '');
+          }
+        } else if (R.phase === 'between'){
+          startReflexRound();
+        }
+      });
+
+      /* ================= REACTION — Target Rush ================= */
+      var RU = { active:false, left:30, hits:0, earned:0, timer:null, combo:0, lastHitAt:0 };
+      function comboMult(){ return RU.combo >= 5 ? 3 : RU.combo >= 3 ? 2 : 1; }
+      function updateCombo(){
+        $('rushCombo').textContent = RU.combo;
+        $('comboFill').style.width = (Math.min(RU.combo, 5) / 5 * 100) + '%';
+        $('rushComboStat').classList.toggle('hot', RU.combo >= 3);
+      }
+      function moveTarget(){
+        var arena = $('arena'), t = $('targetBtn');
+        var maxX = Math.max(0, arena.clientWidth - 72), maxY = Math.max(0, arena.clientHeight - 72);
+        t.style.left = Math.floor(Math.random() * maxX) + 'px';
+        t.style.top = Math.floor(Math.random() * maxY) + 'px';
+      }
+      function startRush(){
+        CG.playStart();
+        RU.active = true; RU.left = 30; RU.hits = 0; RU.earned = 0; RU.combo = 0; RU.lastHitAt = 0; updateCombo();
+        $('rushStartBox').style.display = 'none';
+        $('targetBtn').hidden = false;
+        $('rushFeedback').textContent = '';
+        updateRushHud(); moveTarget();
+        clearInterval(RU.timer);
+        RU.timer = setInterval(function(){
+          RU.left = Math.max(0, RU.left - 0.1); updateRushHud();
+          if (RU.left <= 0) endRush();
+        }, 100);
+      }
+      function updateRushHud(){
+        $('rushTime').textContent = Math.ceil(RU.left) + 's';
+        $('rushHits').textContent = RU.hits;
+        $('rushEarned').textContent = RU.earned + ' coins';
+      }
+      function endRush(){
+        RU.active = false; clearInterval(RU.timer); CG.playStop(); CG.midgame();
+        $('targetBtn').hidden = true;
+        $('rushStartBox').style.display = 'grid';
+        $('rushStartBox').querySelector('.big').textContent = 'Rush over — ' + RU.hits + ' hits';
+        $('rushStartBox').querySelector('p:not(.big)').textContent = 'You banked ' + RU.earned + ' coins. They\u2019re already in your wallet.';
+        $('rushStartBtn').textContent = 'Run it back — free';
+        if (RU.hits >= 18){ confetti(null, 55); sfx.win(); }
+      }
+      $('rushStartBtn').addEventListener('click', startRush);
+      $('targetBtn').addEventListener('click', function(){
+        if (!RU.active) return;
+        var now = performance.now();
+        RU.combo = (now - RU.lastHitAt <= 1500) ? RU.combo + 1 : 1;
+        RU.lastHitAt = now;
+        var mult = comboMult();
+        var pay = 5 * mult;
+        RU.hits++; RU.earned += pay;
+        var r = rectOf(this);
+        burst(r);
+        floater(r, '+' + pay + (mult > 1 ? ' ×' + mult : ''));
+        awardCoins(pay, r, '');
+        sfx.pop(); buzz(10);
+        if (RU.combo === 3 || RU.combo === 5){ confetti(r, 32); sfx.ding(); goldFlash(); }
+        updateCombo(); updateRushHud(); moveTarget();
+      });
+      $('arena').addEventListener('click', function(e){
+        if (!RU.active || e.target !== this) return;
+        if (RU.combo >= 3) floater(rectOf(this), 'Combo lost', true);
+        RU.combo = 0; updateCombo();
+      });
+      $('modeReflex').addEventListener('click', function(){
+        this.classList.add('on'); $('modeRush').classList.remove('on');
+        $('reflexPanel').hidden = false; $('rushPanel').hidden = true;
+      });
+      $('modeRush').addEventListener('click', function(){
+        this.classList.add('on'); $('modeReflex').classList.remove('on');
+        $('reflexPanel').hidden = true; $('rushPanel').hidden = false;
+      });
+
+      adOverlay.addEventListener('click', function(e){ if (e.target === adOverlay && document.getElementById('adClaimBtn').disabled === false) closeAdModal(); });
+
+      /* Instant play — gameplay is on screen first, then tell the portal loading is done.
+         Trivia Rush auto-starts on load: zero clicks to gameplay. Lobby is one tap back. */
+      CG.init();
+      showView('trivia', false);
+      startTrivia();
+    </script>
+  </body>
+</html>
